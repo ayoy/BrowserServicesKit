@@ -93,6 +93,8 @@ open class SurrogatesUserScript: NSObject, UserScript {
     
     public var forMainFrameOnly: Bool = false
     
+    public var requiresRunInPageContentWorld: Bool = true
+
     public var messageNames: [String] = [ "trackerDetectedMessage" ]
 
     public weak var delegate: SurrogatesUserScriptDelegate?
@@ -112,7 +114,7 @@ open class SurrogatesUserScript: NSObject, UserScript {
             delegate.surrogatesUserScript(self, detectedTracker: tracker, withSurrogate: host)
         }
     }
-            
+
     private func trackerFromUrl(_ urlString: String, pageUrlString: String, _ blocked: Bool) -> DetectedTracker {
         let currentTrackerData = configuration.trackerData
         let knownTracker = currentTrackerData?.findTracker(forUrl: urlString)
@@ -120,10 +122,28 @@ open class SurrogatesUserScript: NSObject, UserScript {
         return DetectedTracker(url: urlString, knownTracker: knownTracker, entity: entity, blocked: blocked, pageUrl: pageUrlString)
     }
 
+    private static func createSurrogateFunctions(_ surrogates: String) -> String {
+        let commentlessSurrogates = surrogates.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).filter {
+            return !$0.starts(with: "#")
+        }.joined(separator: "\n")
+        let surrogateScripts = commentlessSurrogates.components(separatedBy: "\n\n")
+
+        // Construct a JavaScript object for function lookup
+        let surrogatesOut = surrogateScripts.map { (surrogate) -> String in
+            var codeLines = surrogate.split(separator: "\n")
+            let instructionsRow = codeLines.removeFirst()
+            let pattern = instructionsRow.split(separator: " ")[0].split(separator: "/")[1]
+            let stringifiedFunction = codeLines.joined(separator: "\n")
+            return "surrogates['\(pattern)'] = function () {\(stringifiedFunction)}"
+        }
+        return surrogatesOut.joined(separator: "\n")
+    }
+
     public static func generateSource(privacyConfiguration: PrivacyConfiguration,
                                       surrogates: String,
                                       encodedSurrogateTrackerData: String?,
                                       isDebugBuild: Bool) -> String {
+
         let remoteUnprotectedDomains = (privacyConfiguration.tempUnprotectedDomains.joined(separator: "\n"))
             + "\n"
             + (privacyConfiguration.exceptionsList(forFeature: .contentBlocking).joined(separator: "\n"))
@@ -143,7 +163,7 @@ open class SurrogatesUserScript: NSObject, UserScript {
             "$USER_UNPROTECTED_DOMAINS$": privacyConfiguration.userUnprotectedDomains.joined(separator: "\n"),
             "$TRACKER_ALLOWLIST_ENTRIES$": TrackerAllowlistInjection.prepareForInjection(allowlist: privacyConfiguration.trackerAllowlist),
             "$TRACKER_DATA$": trackerData,
-            "$SURROGATES$": surrogates,
+            "$SURROGATES$": createSurrogateFunctions(surrogates),
             "$BLOCKING_ENABLED$": privacyConfiguration.isEnabled(featureKey: .contentBlocking) ? "true" : "false"
         ])
     }
