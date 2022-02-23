@@ -585,17 +585,13 @@ extension DefaultDatabaseProvider {
                 \(Account.databaseTableName)
             (
                 \(Account.Columns.title.name),
-                \(Account.Columns.username.name),
-                \(Account.Columns.domain.name),
                 \(Account.Columns.note.name),
                 \(Account.Columns.created.name),
                 \(Account.Columns.lastUpdated.name)
-            ) VALUES (?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?)
             """,
                 arguments: [
                     row[SecureVaultModels.Note.DeprecatedColumns.title.name],
-                    "",
-                    "",
                     row[SecureVaultModels.Note.DeprecatedColumns.text.name],
                     row[SecureVaultModels.Note.DeprecatedColumns.created.name],
                     row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name]
