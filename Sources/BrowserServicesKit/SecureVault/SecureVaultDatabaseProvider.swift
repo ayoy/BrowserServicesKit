@@ -81,7 +81,7 @@ final class DefaultDatabaseProvider: SecureVaultDatabaseProvider {
         migrator.registerMigration("v4", migrate: Self.migrateV4(database:))
         migrator.registerMigration("v5", migrate: Self.migrateV5(database:))
         migrator.registerMigration("v6", migrate: Self.migrateV6(database:))
-//        migrator.registerMigration("v7", migrate: Self.migrateV7(database:))
+        migrator.registerMigration("v7", migrate: Self.migrateV7(database:))
         // ... add more migrations here ...
         do {
             try migrator.migrate(db)
@@ -563,15 +563,15 @@ extension DefaultDatabaseProvider {
 
     }
 
-//    static func migrateV7(database: Database) throws {
-//        typealias Account = SecureVaultModels.WebsiteAccount
-//        typealias Note = SecureVaultModels.Note
-//
-//        // Add a new column for notes
-//        try database.alter(table: Account.databaseTableName) {
-//            $0.add(column: Account.Columns.note.name, .text)
-//        }
-//
+    static func migrateV7(database: Database) throws {
+        typealias Account = SecureVaultModels.WebsiteAccount
+        typealias Note = SecureVaultModels.Note
+
+        // Add a new column for notes
+        try database.alter(table: Account.databaseTableName) {
+            $0.add(column: Account.Columns.note.name, .text)
+        }
+
 //        // Iterate over existing notes and migrate them into the accounts table
 //
 //        let noteTableName = SecureVaultModels.Note.databaseTableName
@@ -589,7 +589,7 @@ extension DefaultDatabaseProvider {
 //        // 4. Drop the old database:
 //
 //        try database.drop(table: oldTableName)
-//    }
+    }
 
 }
 
