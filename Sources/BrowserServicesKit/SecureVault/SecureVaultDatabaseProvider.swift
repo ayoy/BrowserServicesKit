@@ -30,12 +30,6 @@ protocol SecureVaultDatabaseProvider {
     func websiteAccountsForDomain(_ domain: String) throws -> [SecureVaultModels.WebsiteAccount]
     func deleteWebsiteCredentialsForAccountId(_ accountId: Int64) throws
 
-    func notes() throws -> [SecureVaultModels.Note]
-    func noteForNoteId(_ noteId: Int64) throws -> SecureVaultModels.Note?
-    @discardableResult
-    func storeNote(_ note: SecureVaultModels.Note) throws -> Int64
-    func deleteNoteForNoteId(_ noteId: Int64) throws
-
     func identities() throws -> [SecureVaultModels.Identity]
     func identityForIdentityId(_ identityId: Int64) throws -> SecureVaultModels.Identity?
     @discardableResult
@@ -87,6 +81,7 @@ final class DefaultDatabaseProvider: SecureVaultDatabaseProvider {
         migrator.registerMigration("v4", migrate: Self.migrateV4(database:))
         migrator.registerMigration("v5", migrate: Self.migrateV5(database:))
         migrator.registerMigration("v6", migrate: Self.migrateV6(database:))
+//        migrator.registerMigration("v7", migrate: Self.migrateV7(database:))
         // ... add more migrations here ...
         do {
             try migrator.migrate(db)
@@ -219,60 +214,6 @@ final class DefaultDatabaseProvider: SecureVaultDatabaseProvider {
                 
             }
             return nil
-        }
-    }
-
-    // MARK: Notes
-
-    func notes() throws -> [SecureVaultModels.Note] {
-        return try db.read {
-            return try SecureVaultModels.Note.fetchAll($0)
-        }
-    }
-
-    func noteForNoteId(_ noteId: Int64) throws -> SecureVaultModels.Note? {
-        try db.read {
-            return try SecureVaultModels.Note.fetchOne($0, sql: """
-                SELECT
-                    *
-                FROM
-                    \(SecureVaultModels.Note.databaseTableName)
-                WHERE
-                    \(SecureVaultModels.Note.Columns.id.name) = ?
-                """, arguments: [noteId])
-        }
-    }
-
-    func storeNote(_ note: SecureVaultModels.Note) throws -> Int64 {
-        if let id = note.id {
-            try updateNote(note, usingId: id)
-            return id
-        } else {
-            return try insertNote(note)
-        }
-    }
-
-    func deleteNoteForNoteId(_ noteId: Int64) throws {
-        try db.write {
-            try $0.execute(sql: """
-                DELETE FROM
-                    \(SecureVaultModels.Note.databaseTableName)
-                WHERE
-                    \(SecureVaultModels.Note.Columns.id.name) = ?
-                """, arguments: [noteId])
-        }
-    }
-
-    func updateNote(_ note: SecureVaultModels.Note, usingId id: Int64) throws {
-        try db.write {
-            try note.update($0)
-        }
-    }
-
-    func insertNote(_ note: SecureVaultModels.Note) throws -> Int64 {
-        try db.write {
-            try note.insert($0)
-            return $0.lastInsertedRowID
         }
     }
 
@@ -485,14 +426,14 @@ extension DefaultDatabaseProvider {
     static func migrateV5(database: Database) throws {
 
         try database.create(table: SecureVaultModels.Note.databaseTableName) {
-            $0.autoIncrementedPrimaryKey(SecureVaultModels.Note.Columns.id.name)
+            $0.autoIncrementedPrimaryKey(SecureVaultModels.Note.DeprecatedColumns.id.name)
 
-            $0.column(SecureVaultModels.Note.Columns.title.name, .text)
-            $0.column(SecureVaultModels.Note.Columns.created.name, .date)
-            $0.column(SecureVaultModels.Note.Columns.lastUpdated.name, .date)
+            $0.column(SecureVaultModels.Note.DeprecatedColumns.title.name, .text)
+            $0.column(SecureVaultModels.Note.DeprecatedColumns.created.name, .date)
+            $0.column(SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name, .date)
 
-            $0.column(SecureVaultModels.Note.Columns.associatedDomain.name, .text)
-            $0.column(SecureVaultModels.Note.Columns.text.name, .text)
+            $0.column(SecureVaultModels.Note.DeprecatedColumns.associatedDomain.name, .text)
+            $0.column(SecureVaultModels.Note.DeprecatedColumns.text.name, .text)
         }
 
         try database.create(table: SecureVaultModels.Identity.databaseTableName) {
@@ -622,6 +563,34 @@ extension DefaultDatabaseProvider {
 
     }
 
+//    static func migrateV7(database: Database) throws {
+//        typealias Account = SecureVaultModels.WebsiteAccount
+//        typealias Note = SecureVaultModels.Note
+//
+//        // Add a new column for notes
+//        try database.alter(table: Account.databaseTableName) {
+//            $0.add(column: Account.Columns.note.name, .text)
+//        }
+//
+//        // Iterate over existing notes and migrate them into the accounts table
+//
+//        let noteTableName = SecureVaultModels.Note.databaseTableName
+//        let rows = try Row.fetchCursor(database, sql: "SELECT * FROM \(noteTableName)")
+//
+//        while let row = try rows.next() {
+//
+//            let noteTitle = row[SecureVaultModels.Note.DeprecatedColumns.title.name]
+//            let noteCreated = row[SecureVaultModels.Note.DeprecatedColumns.created.name]
+//            let noteLastUpdated = row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name]
+//            let noteAssociatedDomain = row[SecureVaultModels.Note.DeprecatedColumns.associatedDomain.name]
+//            let noteText = row[SecureVaultModels.Note.DeprecatedColumns.text.name]
+//
+//        }
+//        // 4. Drop the old database:
+//
+//        try database.drop(table: oldTableName)
+//    }
+
 }
 
 // MARK: - Utility functions
@@ -708,7 +677,7 @@ extension DefaultDatabaseProvider {
 extension SecureVaultModels.WebsiteAccount: PersistableRecord, FetchableRecord {
 
     enum Columns: String, ColumnExpression {
-        case id, title, username, domain, created, lastUpdated
+        case id, title, username, domain, note, created, lastUpdated
     }
 
     public init(row: Row) {
@@ -716,6 +685,7 @@ extension SecureVaultModels.WebsiteAccount: PersistableRecord, FetchableRecord {
         title = row[Columns.title]
         username = row[Columns.username]
         domain = row[Columns.domain]
+        note = row[Columns.note]
         created = row[Columns.created]
         lastUpdated = row[Columns.lastUpdated]
     }
@@ -726,6 +696,7 @@ extension SecureVaultModels.WebsiteAccount: PersistableRecord, FetchableRecord {
         container[Columns.username] = username
         container[Columns.domain] = domain
         container[Columns.created] = created
+        container[Columns.note] = note
         container[Columns.lastUpdated] = Date()
     }
 
@@ -797,29 +768,29 @@ extension SecureVaultModels.CreditCard: PersistableRecord, FetchableRecord {
 
 extension SecureVaultModels.Note: PersistableRecord, FetchableRecord {
 
-    enum Columns: String, ColumnExpression {
+    enum DeprecatedColumns: String, ColumnExpression {
         case id, title, created, lastUpdated, associatedDomain, text
     }
 
     public init(row: Row) {
-        id = row[Columns.id]
-        title = row[Columns.title]
-        created = row[Columns.created]
-        lastUpdated = row[Columns.lastUpdated]
-        associatedDomain = row[Columns.associatedDomain]
-        text = row[Columns.text]
+        id = row[DeprecatedColumns.id]
+        title = row[DeprecatedColumns.title]
+        created = row[DeprecatedColumns.created]
+        lastUpdated = row[DeprecatedColumns.lastUpdated]
+        associatedDomain = row[DeprecatedColumns.associatedDomain]
+        text = row[DeprecatedColumns.text]
         
         displayTitle = generateDisplayTitle()
         displaySubtitle = generateDisplaySubtitle()
     }
 
     public func encode(to container: inout PersistenceContainer) {
-        container[Columns.id] = id
-        container[Columns.title] = title
-        container[Columns.created] = created
-        container[Columns.lastUpdated] = Date()
-        container[Columns.associatedDomain] = associatedDomain
-        container[Columns.text] = text
+        container[DeprecatedColumns.id] = id
+        container[DeprecatedColumns.title] = title
+        container[DeprecatedColumns.created] = created
+        container[DeprecatedColumns.lastUpdated] = Date()
+        container[DeprecatedColumns.associatedDomain] = associatedDomain
+        container[DeprecatedColumns.text] = text
     }
 
     public static var databaseTableName: String = "notes"

@@ -46,23 +46,26 @@ public struct SecureVaultModels {
         public var title: String?
         public var username: String
         public var domain: String
+        public var note: String?
         public let created: Date
         public let lastUpdated: Date
 
-        public init(title: String? = nil, username: String, domain: String) {
+        public init(title: String? = nil, username: String, domain: String, note: String? = nil) {
             self.id = nil
             self.title = title
             self.username = username
             self.domain = domain
+            self.note = note
             self.created = Date()
             self.lastUpdated = self.created
         }
 
-        init(id: Int64, title: String? = nil, username: String, domain: String, created: Date, lastUpdated: Date) {
+        init(id: Int64, title: String? = nil, username: String, domain: String, note: String? = nil, created: Date, lastUpdated: Date) {
             self.id = id
             self.title = title
             self.username = username
             self.domain = domain
+            self.note = note
             self.created = created
             self.lastUpdated = lastUpdated
         }

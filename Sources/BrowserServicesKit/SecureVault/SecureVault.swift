@@ -38,12 +38,6 @@ public protocol SecureVault {
     func storeWebsiteCredentials(_ credentials: SecureVaultModels.WebsiteCredentials) throws -> Int64
     func deleteWebsiteCredentialsFor(accountId: Int64) throws
 
-    func notes() throws -> [SecureVaultModels.Note]
-    func noteFor(id: Int64) throws -> SecureVaultModels.Note?
-    @discardableResult
-    func storeNote(_ note: SecureVaultModels.Note) throws -> Int64
-    func deleteNoteFor(noteId: Int64) throws
-
     func identities() throws -> [SecureVaultModels.Identity]
     func identityFor(id: Int64) throws -> SecureVaultModels.Identity?
     @discardableResult
@@ -220,32 +214,6 @@ class DefaultSecureVault: SecureVault {
     func deleteWebsiteCredentialsFor(accountId: Int64) throws {
         try executeThrowingDatabaseOperation {
             try self.providers.database.deleteWebsiteCredentialsForAccountId(accountId)
-        }
-    }
-
-    // MARK: - Notes
-
-    func notes() throws -> [SecureVaultModels.Note] {
-        return try executeThrowingDatabaseOperation {
-            return try self.providers.database.notes()
-        }
-    }
-
-    func noteFor(id: Int64) throws -> SecureVaultModels.Note? {
-        return try executeThrowingDatabaseOperation {
-            return try self.providers.database.noteForNoteId(id)
-        }
-    }
-
-    func storeNote(_ note: SecureVaultModels.Note) throws -> Int64 {
-        return try executeThrowingDatabaseOperation {
-            return try self.providers.database.storeNote(note)
-        }
-    }
-
-    func deleteNoteFor(noteId: Int64) throws {
-        try executeThrowingDatabaseOperation {
-            try self.providers.database.deleteNoteForNoteId(noteId)
         }
     }
 
