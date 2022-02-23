@@ -579,8 +579,28 @@ extension DefaultDatabaseProvider {
         let rows = try Row.fetchCursor(database, sql: "SELECT * FROM \(noteTableName)")
 
         while let row = try rows.next() {
-            let note = SecureVaultModels.Note(row: row)
-            try Account(title: note.title, username: "", domain: note.associatedDomain ?? "", note: note.text, created: note.created, lastUpdated: note.lastUpdated).insert(database)
+
+            try database.execute(sql: """
+            INSERT INTO
+                \(Account.databaseTableName)
+            (
+                \(Account.Columns.title.name),
+                \(Account.Columns.username.name),
+                \(Account.Columns.domain.name),
+                \(Account.Columns.note.name),
+                \(Account.Columns.created.name),
+                \(Account.Columns.lastUpdated.name),
+            ) VALUES (?, ?, ?, ?, ?, ?)
+            """,
+                arguments: [
+                    row[SecureVaultModels.Note.DeprecatedColumns.title.name],
+                    "",
+                    "",
+                    row[SecureVaultModels.Note.DeprecatedColumns.text.name],
+                    row[SecureVaultModels.Note.DeprecatedColumns.created.name],
+                    row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name]
+                ])
+
         }
 
         // Drop the old database
