@@ -129,7 +129,7 @@ extension AutofillUserScript {
 
     struct CredentialObject: Codable {
         let id: Int64
-        let username: String
+        let username: String?
     }
 
     // MARK: - Responses
@@ -255,7 +255,7 @@ extension AutofillUserScript {
                   let password = String(data: credential.password, encoding: .utf8) else { return }
 
             let response = RequestVaultCredentialsResponse(success: .init(id: id,
-                                                                     username: credential.account.username,
+                                                                     username: credential.account.username ?? "",
                                                                      password: password,
                                                                      lastUpdated: credential.account.lastUpdated.timeIntervalSince1970))
             if let json = try? JSONEncoder().encode(response), let jsonString = String(data: json, encoding: .utf8) {
