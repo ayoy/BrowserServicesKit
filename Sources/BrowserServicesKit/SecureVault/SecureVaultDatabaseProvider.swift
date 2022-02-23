@@ -579,14 +579,8 @@ extension DefaultDatabaseProvider {
         let rows = try Row.fetchCursor(database, sql: "SELECT * FROM \(noteTableName)")
 
         while let row = try rows.next() {
-
-            let noteTitle = row[SecureVaultModels.Note.DeprecatedColumns.title.name] as! String
-            let noteCreated = row[SecureVaultModels.Note.DeprecatedColumns.created.name] as! Date
-            let noteLastUpdated = row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name] as! Date
-            let noteAssociatedDomain = row[SecureVaultModels.Note.DeprecatedColumns.associatedDomain.name] as! String
-            let noteText = row[SecureVaultModels.Note.DeprecatedColumns.text.name] as! String
-
-            try Account(title: noteTitle, username: "", domain: noteAssociatedDomain, note: noteText, created: noteCreated, lastUpdated: noteLastUpdated).insert(database)
+            let note = SecureVaultModels.Note(row: row)
+            try Account(title: note.title, username: "", domain: note.associatedDomain ?? "", note: note.text, created: note.created, lastUpdated: note.lastUpdated).insert(database)
         }
 
         // Drop the old database
