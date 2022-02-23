@@ -568,27 +568,30 @@ extension DefaultDatabaseProvider {
         typealias Note = SecureVaultModels.Note
 
         // Add a new column for notes
+
         try database.alter(table: Account.databaseTableName) {
             $0.add(column: Account.Columns.note.name, .text)
         }
 
-//        // Iterate over existing notes and migrate them into the accounts table
-//
-//        let noteTableName = SecureVaultModels.Note.databaseTableName
-//        let rows = try Row.fetchCursor(database, sql: "SELECT * FROM \(noteTableName)")
-//
-//        while let row = try rows.next() {
-//
-//            let noteTitle = row[SecureVaultModels.Note.DeprecatedColumns.title.name]
-//            let noteCreated = row[SecureVaultModels.Note.DeprecatedColumns.created.name]
-//            let noteLastUpdated = row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name]
-//            let noteAssociatedDomain = row[SecureVaultModels.Note.DeprecatedColumns.associatedDomain.name]
-//            let noteText = row[SecureVaultModels.Note.DeprecatedColumns.text.name]
-//
-//        }
-//        // 4. Drop the old database:
-//
-//        try database.drop(table: oldTableName)
+        // Iterate over existing notes and migrate them into the accounts table
+
+        let noteTableName = SecureVaultModels.Note.databaseTableName
+        let rows = try Row.fetchCursor(database, sql: "SELECT * FROM \(noteTableName)")
+
+        while let row = try rows.next() {
+
+            let noteTitle = row[SecureVaultModels.Note.DeprecatedColumns.title.name] as! String
+            let noteCreated = row[SecureVaultModels.Note.DeprecatedColumns.created.name] as! Date
+            let noteLastUpdated = row[SecureVaultModels.Note.DeprecatedColumns.lastUpdated.name] as! Date
+            let noteAssociatedDomain = row[SecureVaultModels.Note.DeprecatedColumns.associatedDomain.name] as! String
+            let noteText = row[SecureVaultModels.Note.DeprecatedColumns.text.name] as! String
+
+            try Account(title: noteTitle, username: "", domain: noteAssociatedDomain, note: noteText, created: noteCreated, lastUpdated: noteLastUpdated).insert(database)
+        }
+
+        // Drop the old database
+
+        try database.drop(table: noteTableName)
     }
 
 }
