@@ -589,7 +589,7 @@ extension DefaultDatabaseProvider {
                 \(Account.Columns.domain.name),
                 \(Account.Columns.note.name),
                 \(Account.Columns.created.name),
-                \(Account.Columns.lastUpdated.name),
+                \(Account.Columns.lastUpdated.name)
             ) VALUES (?, ?, ?, ?, ?, ?)
             """,
                 arguments: [
