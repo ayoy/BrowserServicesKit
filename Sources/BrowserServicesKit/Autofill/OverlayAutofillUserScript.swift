@@ -26,62 +26,27 @@ public class OverlayAutofillUserScript: AutofillUserScript {
     public var autofillInterfaceToChild: AutofillMessagingToChildDelegate?
 
     internal enum OverlayAutofillMessageName: String, CaseIterable {
-#if !os(iOS)
         case setSize
         case selectedDetail
         case closeAutofillParent
-#endif
-        case emailHandlerStoreToken
-        case emailHandlerGetAlias
-        case emailHandlerRefreshAlias
-
-        case emailHandlerGetAddresses
-        case emailHandlerCheckAppSignedInStatus
-
-        case pmHandlerGetAutofillInitData
-
-        case pmHandlerStoreCredentials
-        case pmHandlerGetAccounts
-        case pmHandlerGetAutofillCredentials
-        case pmHandlerGetIdentity
-        case pmHandlerGetCreditCard
-
-        case pmHandlerOpenManageCreditCards
-        case pmHandlerOpenManageIdentities
-        case pmHandlerOpenManagePasswords
     }
-
     
-    internal func messageHandlerFor(_ message: MessageName) -> MessageHandler {
-        switch message {
-#if !os(iOS)
+    public override var messageNames: [String] {
+        return OverlayAutofillMessageName.allCases.map(\.rawValue) + super.messageNames
+    }
+    
+    internal override func messageHandlerFor(_ messageName: String) -> MessageHandler? {
+        guard let overlayAutofillMessage = OverlayAutofillMessageName(rawValue: messageName) else {
+            return super.messageHandlerFor(messageName)
+        }
+
+        switch overlayAutofillMessage {
         // Top Autofill specific messages
         case .setSize: return setSize
         case .selectedDetail: return selectedDetail
 
         // For child and parent autofill
         case .closeAutofillParent: return closeAutofillParent
-#endif
-
-        // Generic Autofill messages
-        case .emailHandlerStoreToken: return emailStoreToken
-        case .emailHandlerGetAlias: return emailGetAlias
-        case .emailHandlerRefreshAlias: return emailRefreshAlias
-        case .emailHandlerGetAddresses: return emailGetAddresses
-        case .emailHandlerCheckAppSignedInStatus: return emailCheckSignedInStatus
-
-        case .pmHandlerGetAutofillInitData: return pmGetAutoFillInitData
-
-        case .pmHandlerStoreCredentials: return pmStoreCredentials
-        case .pmHandlerGetAccounts: return pmGetAccounts
-        case .pmHandlerGetAutofillCredentials: return pmGetAutofillCredentials
-
-        case .pmHandlerGetIdentity: return pmGetIdentity
-        case .pmHandlerGetCreditCard: return pmGetCreditCard
-
-        case .pmHandlerOpenManageCreditCards: return pmOpenManageCreditCards
-        case .pmHandlerOpenManageIdentities: return pmOpenManageIdentities
-        case .pmHandlerOpenManagePasswords: return pmOpenManagePasswords
         }
     }
     

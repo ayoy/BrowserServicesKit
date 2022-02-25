@@ -19,10 +19,6 @@
 
 import Foundation
 
-func messageNameGetter() -> WebsiteAutofillMessageName {
-    return WebsiteAutofillMessageName
-}
-
 public class WebsiteAutofillUserScript: AutofillUserScript {
     public var lastOpenHost: String?
     /// Holds a reference to the tab that is displaying the content overlay.
@@ -32,70 +28,36 @@ public class WebsiteAutofillUserScript: AutofillUserScript {
     /// Last user selected details in the top autofill overlay stored in the child.
     var selectedDetailsData: SelectedDetailsData?
     
+    public override var messageNames: [String] {
+        return WebsiteAutofillMessageName.allCases.map(\.rawValue) + super.messageNames
+    }
+    
     public convenience init(scriptSourceProvider: AutofillUserScriptSourceProvider) {
         self.init(scriptSourceProvider: scriptSourceProvider,
                   encrypter: AESGCMAutofillEncrypter(),
                   hostProvider: SecurityOriginHostProvider())
     }
 
-    internal enum WebsiteAutofillMessageName: String, CaseIterable {
-#if !os(iOS)
+    private enum WebsiteAutofillMessageName: String, CaseIterable {
         case closeAutofillParent
 
         case getSelectedCredentials
         case showAutofillParent
-#endif
-        case emailHandlerStoreToken
-        case emailHandlerGetAlias
-        case emailHandlerRefreshAlias
-
-        case emailHandlerGetAddresses
-        case emailHandlerCheckAppSignedInStatus
-
-        case pmHandlerGetAutofillInitData
-
-        case pmHandlerStoreCredentials
-        case pmHandlerGetAccounts
-        case pmHandlerGetAutofillCredentials
-        case pmHandlerGetIdentity
-        case pmHandlerGetCreditCard
-
-        case pmHandlerOpenManageCreditCards
-        case pmHandlerOpenManageIdentities
-        case pmHandlerOpenManagePasswords
     }
 
     
-    internal func messageHandlerFor(_ message: MessageName) -> MessageHandler {
-        switch message {
-#if !os(iOS)
+    internal override func messageHandlerFor(_ messageName: String) -> MessageHandler? {
+        guard let websiteAutofillMessageName = WebsiteAutofillMessageName(rawValue: messageName) else {
+            return super.messageHandlerFor(messageName)
+        }
+        
+        switch websiteAutofillMessageName {
         // Child Autofill specific messages
         case .getSelectedCredentials: return getSelectedCredentials
         case .showAutofillParent: return showAutofillParent
 
         // For child and parent autofill
         case .closeAutofillParent: return closeAutofillParent
-#endif
-
-        // Generic Autofill messages
-        case .emailHandlerStoreToken: return emailStoreToken
-        case .emailHandlerGetAlias: return emailGetAlias
-        case .emailHandlerRefreshAlias: return emailRefreshAlias
-        case .emailHandlerGetAddresses: return emailGetAddresses
-        case .emailHandlerCheckAppSignedInStatus: return emailCheckSignedInStatus
-
-        case .pmHandlerGetAutofillInitData: return pmGetAutoFillInitData
-
-        case .pmHandlerStoreCredentials: return pmStoreCredentials
-        case .pmHandlerGetAccounts: return pmGetAccounts
-        case .pmHandlerGetAutofillCredentials: return pmGetAutofillCredentials
-
-        case .pmHandlerGetIdentity: return pmGetIdentity
-        case .pmHandlerGetCreditCard: return pmGetCreditCard
-
-        case .pmHandlerOpenManageCreditCards: return pmOpenManageCreditCards
-        case .pmHandlerOpenManageIdentities: return pmOpenManageIdentities
-        case .pmHandlerOpenManagePasswords: return pmOpenManagePasswords
         }
     }
     

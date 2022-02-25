@@ -58,8 +58,24 @@ public class AutofillUserScript: NSObject, UserScript {
     typealias MessageHandler = (AutofillMessage, @escaping MessageReplyHandler) -> Void
 
     internal enum MessageName: String, CaseIterable {
-        case TOEXTEND
-    // See impls
+        case emailHandlerStoreToken
+        case emailHandlerGetAlias
+        case emailHandlerRefreshAlias
+
+        case emailHandlerGetAddresses
+        case emailHandlerCheckAppSignedInStatus
+
+        case pmHandlerGetAutofillInitData
+
+        case pmHandlerStoreCredentials
+        case pmHandlerGetAccounts
+        case pmHandlerGetAutofillCredentials
+        case pmHandlerGetIdentity
+        case pmHandlerGetCreditCard
+
+        case pmHandlerOpenManageCreditCards
+        case pmHandlerOpenManageIdentities
+        case pmHandlerOpenManagePasswords
     }
 
     /// Represents if the autofill is loaded into the top autofill context.
@@ -89,11 +105,36 @@ public class AutofillUserScript: NSObject, UserScript {
         // We can't do reply based messaging to frames on versions before the ones mentioned above, so main frame only
         return true
     }
-    public var messageNames: [String] { MessageName.allCases.map(\.rawValue) }
 
-    internal func messageHandlerFor(_ message: MessageName) -> MessageHandler {
-        // See impls
-        fatalError("Nope")
+    public var messageNames: [String] {
+        return MessageName.allCases.map(\.rawValue)
+    }
+
+    internal func messageHandlerFor(_ messageName: String) -> MessageHandler? {
+        guard let message = MessageName(rawValue: messageName) else {
+            return nil
+        }
+
+        switch message {
+            case .emailHandlerStoreToken: return emailStoreToken
+            case .emailHandlerGetAlias: return emailGetAlias
+            case .emailHandlerRefreshAlias: return emailRefreshAlias
+            case .emailHandlerGetAddresses: return emailGetAddresses
+            case .emailHandlerCheckAppSignedInStatus: return emailCheckSignedInStatus
+
+            case .pmHandlerGetAutofillInitData: return pmGetAutoFillInitData
+
+            case .pmHandlerStoreCredentials: return pmStoreCredentials
+            case .pmHandlerGetAccounts: return pmGetAccounts
+            case .pmHandlerGetAutofillCredentials: return pmGetAutofillCredentials
+
+            case .pmHandlerGetIdentity: return pmGetIdentity
+            case .pmHandlerGetCreditCard: return pmGetCreditCard
+
+            case .pmHandlerOpenManageCreditCards: return pmOpenManageCreditCards
+            case .pmHandlerOpenManageIdentities: return pmOpenManageIdentities
+            case .pmHandlerOpenManagePasswords: return pmOpenManagePasswords
+        }
     }
 
     let encrypter: AutofillEncrypter
@@ -136,9 +177,12 @@ extension AutofillUserScript: WKScriptMessageHandlerWithReply {
     public func userContentController(_ userContentController: WKUserContentController,
                                       didReceive message: WKScriptMessage,
                                       replyHandler: @escaping (Any?, String?) -> Void) {
-        guard let messageName = MessageName(rawValue: message.name) else { return }
+        guard let messageHandler = messageHandlerFor(message.name) else {
+            assertionFailure("Got message type for which no handler exists: \(message.name)")
+            return
+        }
 
-        messageHandlerFor(messageName)(message) {
+        messageHandler(message) {
             replyHandler($0, nil)
         }
 
@@ -150,15 +194,19 @@ extension AutofillUserScript: WKScriptMessageHandlerWithReply {
 extension AutofillUserScript {
     
     func processMessage(_ userContentController: WKUserContentController, didReceive message: AutofillMessage) {
-        guard let messageName = MessageName(rawValue: message.messageName),
-              let body = message.messageBody as? [String: Any],
+        guard let messageHandler = messageHandlerFor(message.messageName) else {
+            assertionFailure("Got message type for which no handler exists: \(message.messageName)")
+            return
+        }
+
+        guard let body = message.messageBody as? [String: Any],
               let messageHandling = body["messageHandling"] as? [String: Any],
               let secret = messageHandling["secret"] as? String,
               // If this does not match the page is playing shenanigans.
               secret == generatedSecret
         else { return }
 
-        messageHandlerFor(messageName)(message) { reply in
+        messageHandler(message) { reply in
             guard let reply = reply,
                   let messageHandling = body["messageHandling"] as? [String: Any],
                   let key = messageHandling["key"] as? [UInt8],
