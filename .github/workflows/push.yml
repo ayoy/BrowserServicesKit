@@ -6,8 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-
-
 jobs:
   swiftlint:
 
@@ -15,10 +13,12 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
-    - name: Run SwiftLint #on files changed in the PR
+    - name: Run SwiftLint on files changed in the PR
       uses: norio-nomura/action-swiftlint@3.2.1
-        #env:
-          #DIFF_BASE: ${{ github.base_ref }}
+      with:
+        args: --strict
+      #env:
+        #DIFF_BASE: ${{ github.base_ref }}
 
   run-unit-tests:
 
