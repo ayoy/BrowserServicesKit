@@ -32,17 +32,23 @@ extension URL {
         return components.url
     }
 
+
     var nakedString: String? {
         naked?.absoluteString.dropping(prefix: "//")
     }
 
     public var root: URL? {
         guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false) else { return self }
-        components.path = "/"
-        components.query = nil
-        components.fragment = nil
-        components.user = nil
-        components.password = nil
+        components.path="/"
+        components.query=nil
+        components.fragment=nil
+        components.user=nil
+
+
+
+
+
+        components.password=nil
         return components.url
     }
     
