@@ -22,7 +22,7 @@ import Foundation
 // swiftlint:disable file_length
 
 public protocol EmailManagerStorage: AnyObject {
-    func getUsername() -> String?
+    func getUsername()->String?
     func getToken() -> String?
     func getAlias() -> String?
     func getCohort() -> String?
