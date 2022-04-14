@@ -18,13 +18,11 @@ jobs:
     - name: Fetch PR's target branch SHA
       run: |
         git fetch --no-tags --prune --depth=1 origin ${{ github.base_ref }}
-        echo "BASE_SHA=$(git rev-parse origin/${{ github.base_ref }})" >> $GITHUB_ENV
+        echo "DIFF_BASE=$(git rev-parse origin/${{ github.base_ref }})" >> $GITHUB_ENV
     - name: Run SwiftLint on files changed in the PR
       uses: norio-nomura/action-swiftlint@3.2.1
       with:
         args: --force-exclude
-      env:
-        DIFF_BASE: ${{ env.BASE_SHA }}
 
   unit-tests:
 
