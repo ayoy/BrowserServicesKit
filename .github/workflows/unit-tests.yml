@@ -15,14 +15,15 @@ jobs:
     steps:
     - name: Check out the code
       uses: actions/checkout@v3
-    - name: Fetch PR's target branch SHA
+    - name: Fetch PR's target branch
       run: |
         git fetch --no-tags --prune --depth=1 origin ${{ github.base_ref }}
-        echo "DIFF_BASE=$(git rev-parse origin/${{ github.base_ref }})" >> $GITHUB_ENV
     - name: Run SwiftLint on files changed in the PR
       uses: norio-nomura/action-swiftlint@3.2.1
       with:
         args: --force-exclude
+      env:
+        DIFF_BASE: ${{ github.base_ref }}
 
   unit-tests:
 
