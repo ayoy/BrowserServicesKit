@@ -20,7 +20,7 @@ jobs:
       with:
         args: --force-exclude
       env:
-        DIFF_BASE: ${{ github.base_ref }}
+        DIFF_BASE: origin/${{ github.base_ref }}
 
   unit-tests:
 
