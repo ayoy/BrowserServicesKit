@@ -16,7 +16,9 @@ jobs:
     - name: Check out the code
       uses: actions/checkout@v3
     - name: Fetch PR's target branch SHA
-      run: echo "BASE_SHA=$(git rev-parse origin/${{ github.base_ref }})" >> $GITHUB_ENV
+      run: |
+        git fetch --no-tags --prune --depth=1 origin ${{ github.base_ref }}
+        echo "BASE_SHA=$(git rev-parse ${{ github.base_ref }})" >> $GITHUB_ENV
     - name: Run SwiftLint on files changed in the PR
       uses: norio-nomura/action-swiftlint@3.2.1
       with:
